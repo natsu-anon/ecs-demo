@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://d3mcok1uctrgo"]
+
+[ext_resource type="Script" uid="uid://cron0u8pyi72t" path="res://src/ProjectilePool.gd" id="1_8s0bm"]
+
+[node name="ClassicDemo" type="Node3D"]
+
+[node name="ProjectilePool" type="Node3D" parent="."]
+script = ExtResource("1_8s0bm")
+num_total = 10000
+metadata/_custom_type_script = "uid://cron0u8pyi72t"
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.836698, -0.137791, 0.530048, 1.09313e-08, 0.967832, 0.251596, -0.547665, -0.21051, 0.809783, 2.27601, 1.49254, 1.11068)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.217264, 0.672902, 0, 0.951627, 0.307257, -0.707107, -0.217264, 0.672902, 0, 0, 0)
