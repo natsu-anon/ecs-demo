@@ -5,3 +5,4 @@
 .sconsign.dblite
 .editorconfig
 .cache/
+*.os
