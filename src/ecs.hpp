@@ -3,6 +3,7 @@
 
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/multi_mesh.hpp>
 #include "allocators/arena.h"
 #include "components.hpp"
 
@@ -24,7 +25,7 @@ VARIANT_ENUM_CAST(Component);
 
 struct {
 	godot::Entity3D** entities; // lol lmao even
-	void** components;
+	// void** components;
 	uint64_t* bitmasks;
 	uint16_t size;
 } ecs_table = {0};
@@ -54,7 +55,7 @@ public:
 	static uint16_t activate_entity(Entity3D* entity);
 	static void add_component(const uint16_t id, const Component component);
 
-#define X(_, __, NAME, GODOT_TYPE) static void set_##NAME(const uint16_t id, const GODOT_TYPE& value);
+#define X(_, __, NAME, GODOT_TYPE) static void set_##NAME(const uint16_t id, const GODOT_TYPE value);
 	COMPONENTS
 #undef X
 

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="ECS DEmo"
-run/main_scene="uid://dmw5w7f5nkh1p"
+run/main_scene="uid://b0dmg3giii5up"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 

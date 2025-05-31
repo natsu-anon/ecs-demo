@@ -5,16 +5,19 @@ extends Node3D
 @export var projectile_lifetime: float = 10.0
 @export var num_total: int = 100
 var projectile = preload("res://classic_projectile.tscn")
-var num_active: int = 0
+@onready var num_active: int = 0
 var sum: float = 0
 var freq: float
-# var total: int
+@export var multi_mesh_instance: MultiMeshInstance3D
+var mmesh
 
 func _ready() -> void:
 	freq = projectile_lifetime / num_total
-	# total = 0
-	num_active = 0
 	print("Spawn frequency: ", freq)
+	#multimesh.instance_count = num_total
+	mmesh = multi_mesh_instance.multimesh
+	mmesh.instance_count = num_total
+	mmesh.visible_instance_count = 0
 
 func _enter_tree() -> void:
 	for i in range(num_total):
@@ -28,7 +31,7 @@ func _enter_tree() -> void:
 
 func _exit_tree() -> void:
 	for i in range(num_total):
-		get_child(i).queue_free()
+		get_child(i + 1).queue_free()
 	num_active = 0
 
 func _process(delta: float) -> void:
@@ -36,6 +39,9 @@ func _process(delta: float) -> void:
 	while sum > freq && num_active < num_total:
 		spawn_projectile()
 		sum -= freq
+	mmesh.visible_instance_count = num_active
+	for i in range(num_active):
+		mmesh.set_instance_transform(i, get_child(i).global_transform)
 
 func spawn_projectile() -> void:
 	var p: Projectile = get_child(num_active)

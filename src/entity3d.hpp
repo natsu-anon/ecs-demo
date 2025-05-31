@@ -2,7 +2,7 @@
 #define ENTITY3D_HPP
 
 #include <godot_cpp/classes/node3d.hpp>
-// #include "ecs.hpp"
+#include "ecs.hpp"
 
 namespace godot {
 
@@ -15,7 +15,8 @@ public:
 	// ~Entity();
 
 public:
-	int ecs_id;
+	// int ecs_id;
+	void* components[NUM_COMPONENTS];
 	// void add_component(const uint16_t entity_id, const Component c_id);
 
 	// :^)
@@ -23,9 +24,9 @@ public:
 	// COMPONENTS
 	// #undef X
 
-public:
-	void set_ecs_id(const int value);
-	int get_ecs_id() const;
+// public:
+// 	void set_ecs_id(const int value);
+// 	int get_ecs_id() const;
 
 
 protected:

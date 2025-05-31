@@ -4,9 +4,11 @@ extends Node3D
 var lifetime: float
 var velocity: Vector3
 var flag: bool = false
+#@export var mmesh: MultiMeshInstance3D
 
 func _process(delta: float) -> void:
 	translate(delta * velocity)
+	#mmesh.transform = transform
 	lifetime -= delta
 	if lifetime < 0.0 && flag:
 		var pool: ProjectilePool = get_parent()

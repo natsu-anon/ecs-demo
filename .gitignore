@@ -6,3 +6,4 @@
 .editorconfig
 .cache/
 *.os
+*.so

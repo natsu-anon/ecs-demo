@@ -4,10 +4,10 @@
 #include <godot_cpp/classes/ref.hpp>
 #include <stdint.h>
 
-#define COMPONENTS \
-	X(POSITION, Position, position, Vector3)									\
-	X(VELOCITY, Velocity, velocity, Vector3)							\
-	X(LIFETIME, Lifetime, lifetime, float)
+#define COMPONENTS								\
+	X(POSITION, Position, position, Vector3&)	\
+	X(VELOCITY, Velocity, velocity, Vector3&)	\
+	X(LIFETIME, Lifetime, lifetime, float&)
 
 struct Position {
 	float x;
@@ -21,7 +21,7 @@ struct Velocity {
 	float z;
 };
 
-// struct Lifetime {
+// struct lifetime {
 // 	float value;
 // };
 

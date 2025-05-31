@@ -1,9 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://br2dqokwl6dhp"]
+[gd_scene load_steps=3 format=3 uid="uid://br2dqokwl6dhp"]
 
-[sub_resource type="SphereMesh" id="SphereMesh_yx5ye"]
+[sub_resource type="SphereMesh" id="SphereMesh_11e53"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_yx5ye"]
+transform_format = 1
+mesh = SubResource("SphereMesh_11e53")
 
 [node name="Entity3D" type="Entity3D"]
 visible = true
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("SphereMesh_yx5ye")
+[node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
+multimesh = SubResource("MultiMesh_yx5ye")

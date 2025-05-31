@@ -2,7 +2,7 @@
 
 #include "ecs.hpp"
 #include "entity3d.hpp"
-// #include "entity_pool.hpp"
+#include "entity_pool.hpp"
 // #include "entity_projectile_pool.hpp"
 
 #include <gdextension_interface.h>
@@ -17,7 +17,7 @@ void initialize_ecsdemo_module(ModuleInitializationLevel p_level) {
 	}
 	GDREGISTER_RUNTIME_CLASS(ECS);
 	GDREGISTER_RUNTIME_CLASS(Entity3D);
-	// GDREGISTER_RUNTIME_CLASS(EntityPool);
+	GDREGISTER_RUNTIME_CLASS(EntityPool);
 	// GDREGISTER_RUNTIME_CLASS(EntityProjectilePool);
 }
 
