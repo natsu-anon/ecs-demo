@@ -11,7 +11,6 @@
 #include "components.hpp"
 #include "entity_pool.hpp"
 #include "allocators/pool.h"
-#include "godot_cpp/variant/transform3d.hpp"
 
 
 static struct {
