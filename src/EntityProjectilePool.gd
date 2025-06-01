@@ -12,6 +12,7 @@ var freq: float
 
 func _ready() -> void:
 	freq = projectile_lifetime / num_total
+	freq += 0.001
 	num_active =  0
 	print("Spawn frequency: ", freq)
 	mmesh.instance_count = num_total

@@ -25,7 +25,7 @@ VARIANT_ENUM_CAST(Component);
 
 struct {
 	godot::Entity3D** entities; // lol lmao even
-	// void** components;
+	void** components;
 	uint64_t* bitmasks;
 	uint16_t size;
 } ecs_table = {0};

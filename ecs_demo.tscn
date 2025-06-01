@@ -12,7 +12,7 @@ font_size = 160
 
 [node name="EntityProjectilePool" type="EntityPool" parent="." node_paths=PackedStringArray("multi_mesh_instance")]
 script = ExtResource("1_swnti")
-num_total = 1000
+num_total = 10000
 multi_mesh_instance = NodePath("../MultiMeshInstance3D")
 metadata/_custom_type_script = "uid://c6f2mhfy1wtpy"
 
