@@ -15,9 +15,6 @@ process_thread_group_order = 0
 process_thread_messages = 0
 
 [node name="EntityProjectilePool" type="EntityPool" parent="." node_paths=PackedStringArray("multi_mesh_instance")]
-process_thread_group = 1
-process_thread_group_order = 0
-process_thread_messages = 0
 script = ExtResource("1_swnti")
 num_total = 10000
 multi_mesh_instance = NodePath("../MultiMeshInstance3D")
