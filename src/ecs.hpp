@@ -52,7 +52,7 @@ public:
 	// uint16_t size;
 
 private:
-	int max_threads;
+	// int max_threads;
 
 public:
 	static uint16_t activate_entity(Entity3D* entity);

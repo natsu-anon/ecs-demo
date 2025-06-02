@@ -30,7 +30,7 @@ pool_t* component_pool[Component::NUM_COMPONENTS];
 
 ECS::ECS() {
 	if (Engine::get_singleton()->is_editor_hint()) return;
-	max_threads = OS::get_singleton()->get_processor_count();
+	// max_threads = OS::get_singleton()->get_processor_count();
 	// initialize the entity table
 	// const size_t size = sizeof *ecs_table.entities + sizeof *ecs_table.bitmasks;
 	const size_t size = sizeof *ecs_table.entities + NUM_COMPONENTS * sizeof *ecs_table.components + sizeof *ecs_table.bitmasks;
@@ -107,42 +107,24 @@ inline static void mark_update(uint16_t index) {
 
 #define FREE_ENTITY NUM_COMPONENTS
 void ECS::_process(const double delta) {
-	// print_line("> processing ", ecs_table.size, " entities");
-	// these aliases are actually safe
-	// print_line("ECS._process ", delta);
+	// these aliases are actually free-safe
 	Entity3D** entities = ecs_table.entities;
 	void** components = ecs_table.components;
 	uint8_t* bitmasks = ecs_table.bitmasks;
-	// printf("components: %#0x\n", ecs_table.components);
-	// printf("bitmasks: %#0x\n", ecs_table.bitmasks);
-	// for (uint16_t i = 0; i < ecs_table.size; ++i)
-	// {
-	// 	printf("\t> %d: %#0b\n", i, bitmasks[i]);
-	// }
-	// fflush(stdout);
 	// FIRST: free before anything else
-	// print_line("Free entity: ", FREE_ENTITY);
 	uint8_t mask = 1 << FREE_ENTITY;
 	update_list.size = 0;
-	for (uint16_t i = 0; i < ecs_table.size; ++i)
-	{
-		if (bitmasks[i] & mask)
-		{
-			// printf("%d, ", i);
+	for (uint16_t i = 0; i < ecs_table.size; ++i) {
+		if (bitmasks[i] & mask) {
 			mark_update(i);
 		}
 	}
-	// update_list.size = 0;
-	// printf(" - marked");
-	if (update_list.size > 0)
-	{
+	if (update_list.size > 0) {
 		const uint16_t n = update_list.size;
 		// printf("\n> freeing %d out of %d entities\n", n, ecs_table.size);
-		// free the components for reuse
-		for (uint8_t i = 0; i < NUM_COMPONENTS; ++i)
-		{
-			for (uint16_t j = 0; j < n; ++j)
-			{
+		// recycle the components
+		for (uint8_t i = 0; i < NUM_COMPONENTS; ++i) {
+			for (uint16_t j = 0; j < n; ++j) {
 				const uint16_t k = update_list.indices[j];
 				pool_free(component_pool[i], components[NUM_COMPONENTS * k + i]);
 			}
@@ -150,24 +132,20 @@ void ECS::_process(const double delta) {
 		// NOTE: skip zeroing the to-be-freed bitmasks since ecs_table.size will be shrunk
 		// hide the node & move it to end of the entity pool
 		EntityPool* entity_pool = (EntityPool*)entities[0]->get_parent();
-		for (int32_t i = n - 1; i >= 0; --i)
-		{
+		for (int32_t i = n - 1; i >= 0; --i) {
 			Entity3D* e = entities[update_list.indices[i]];
 			e->hide();
-			entity_pool->move_child(e, entity_pool->num_active--);
-			// entity_pool->num_active -= 1;
+			entity_pool->move_child(e, --entity_pool->num_active);
 		}
 		// finally, shrink the entity table by repeatedly copying the last element to the closest freed spot.
 		// So can't brainlessly multithread :(
 		// So also free the entity's component address array as well since that can't be multithreaded without a mutex either.
 		// for (uint16_t i = n - 1; i >= 0; --i) // LOL LMAO
 		const size_t sizeof_components = NUM_COMPONENTS * sizeof *components; // hoist
-		for (int32_t i = n - 1; i >= 0; --i)
-		{
+		for (int32_t i = n - 1; i >= 0; --i) {
 			const uint16_t j = update_list.indices[i];
 			const uint16_t m = --ecs_table.size;
-			if (j < m)
-			{
+			if (j < m) {
 				entities[j] = entities[m];
 				bitmasks[j] = bitmasks[m];
 				// copy over the component addresses
@@ -175,39 +153,30 @@ void ECS::_process(const double delta) {
 				entities[j]->ecs_id = j;
 			}
 		}
-		// printf("finished swap\n");
-					// printf("copying components")
-		// print_line(" - swap & shrunk");
-		// printf("free complete!\n");
 	}
+	// update positions
 	mask = (1 << POSITION) | (1 << VELOCITY);
 	update_list.size = 0;
-	for (uint16_t i = 0; i < ecs_table.size; ++i)
-	{
-		if ((bitmasks[i] & mask) == mask)
-		{
+	for (uint16_t i = 0; i < ecs_table.size; ++i) {
+		if ((bitmasks[i] & mask) == mask) {
 			mark_update(i);
 		}
 	}
-	if (update_list.size > 0)
-	{
+	if (update_list.size > 0) {
 		const uint16_t n = update_list.size;
-		// printf("> updating %d positions\n", n);
 		struct Argument {
 			Position position;
 			Velocity velocity;
 		};
 		Argument* args = arena_scratch(&arg_arena, n * sizeof *args);
 		Position* res = arena_scratch(&res_arena, n * sizeof *res);
-		for (uint16_t i = 0; i < n; ++i)
-		{
+		for (uint16_t i = 0; i < n; ++i) {
 			const uint16_t j = update_list.indices[i];
 			const uint32_t k = NUM_COMPONENTS * j;
 			memcpy(&args[i].position, components[k + POSITION], sizeof(Position));
 			memcpy(&args[i].velocity, components[k + VELOCITY], sizeof(Velocity));
 		}
-		for (uint16_t i = 0; i < n; ++i)
-		{
+		for (uint16_t i = 0; i < n; ++i) {
 			const Position p0 = args[i].position;
 			const Velocity v0 = args[i].velocity;
 			Position* p1 = res + i;
@@ -215,11 +184,9 @@ void ECS::_process(const double delta) {
 			p1->y = p0.y + delta * v0.y;
 			p1->z = p0.z + delta * v0.z;
 		}
-		for (uint16_t i = 0; i < n; ++i)
-		{
+		for (uint16_t i = 0; i < n; ++i) {
 			const uint16_t j = update_list.indices[i];
 			const uint32_t k = NUM_COMPONENTS * j;
-			// printf("memcpy to: [%#0x, %#0x)\n", components[k + POSITION], (uint8_t*)components[k + POSITION] + sizeof(Position));
 			memcpy(components[k + POSITION], res + i, sizeof(Position));
 			const Vector3 vec3 = Vector3(res[i].x, res[i].y, res[i].z);
 			entities[j]->set_global_position(vec3);
@@ -230,17 +197,14 @@ void ECS::_process(const double delta) {
 	update_list.size = 0;
 	for (uint16_t i = 0; i < ecs_table.size; ++i)
 	{
-		if (ecs_table.bitmasks[i] & mask)
-		{
+		if (bitmasks[i] & mask) {
 			mark_update(i);
 		}
 	}
 	if (update_list.size > 0)
 	{
 		const uint16_t n = update_list.size;
-		// printf("> updating %d lifetimes\n", n);
 		Lifetime* args = arena_scratch(&arg_arena, n * sizeof *args);
-		Lifetime* res = args;
 		for (uint16_t i = 0; i < n; ++i)
 		{
 			const uint16_t j = update_list.indices[i];
@@ -248,14 +212,15 @@ void ECS::_process(const double delta) {
 		}
 		for (uint16_t i = 0; i < n; ++i)
 		{
-			res[i].value = args[i].value - delta;
+			args[i].value -= delta;
 		}
 		for (uint16_t i = 0; i < n; ++i)
 		{
+			// D E V I L I S H T A C T I C
 			const uint16_t j = update_list.indices[i];
 			memcpy(components[NUM_COMPONENTS * j + LIFETIME], args + i, sizeof(Lifetime));
-			// D E V I L I S H T A C T I C
-			bitmasks[j] |= (res[i].bits >> 31) << FREE_ENTITY;
+			bitmasks[j] |= (args[i].bits >> 31) << FREE_ENTITY;
 		}
+		fflush(stdout);
 	}
 }
