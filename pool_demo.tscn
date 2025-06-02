@@ -24,7 +24,7 @@ transform = Transform3D(0.707107, -0.217264, 0.672902, 0, 0.951627, 0.307257, -0
 script = ExtResource("1_74thy")
 multi_mesh_instance = NodePath("../MultiMeshInstance3D")
 projectile_lifetime = 3.0
-num_total = 10000
+num_total = 1000
 metadata/_custom_type_script = "uid://cron0u8pyi72t"
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]

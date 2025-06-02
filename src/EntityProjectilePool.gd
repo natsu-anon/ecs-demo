@@ -3,7 +3,7 @@ extends EntityPool
 
 @export var projectile_speed: float = 10
 @export var projectile_lifetime: float = 10.0
-@export_range(0, 16384) var num_total: int = 100
+@export_range(0, 65536) var num_total: int = 100
 @export var multi_mesh_instance: MultiMeshInstance3D
 var projectile = preload("res://entity_projectile.tscn")
 var sum: float = 0
@@ -31,9 +31,9 @@ func _process(delta: float) -> void:
 	while sum > freq && num_active < num_total:
 		spawn_projectile()
 		sum -= freq
-	mmesh.visible_instance_count = num_active
-	for i in range(num_active):
-		mmesh.set_instance_transform(i, get_child(i).global_transform)
+	#mmesh.visible_instance_count = num_active
+	#for i in range(num_active):
+		#mmesh.set_instance_transform(i, get_child(i).global_transform)
 
 func spawn_projectile() -> void:
 	var entity: Entity3D = get_child(num_active)
