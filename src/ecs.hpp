@@ -24,10 +24,12 @@ enum Component {
 
 VARIANT_ENUM_CAST(Component);
 
+
 struct {
 	godot::Entity3D** entities; // lol lmao even
 	void** components;
-	uint64_t* bitmasks;
+	// uint64_t* bitmasks;
+	uint8_t* bitmasks;
 	uint16_t size;
 } ecs_table = {0};
 
