@@ -6,6 +6,9 @@ var velocity: Vector3
 var flag: bool = false
 #@export var mmesh: MultiMeshInstance3D
 
+func _init():
+	set_physics_process(false)
+
 func _process(delta: float) -> void:
 	translate(delta * velocity)
 	#mmesh.transform = transform
