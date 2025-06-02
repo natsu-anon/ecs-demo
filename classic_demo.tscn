@@ -22,7 +22,7 @@ transform = Transform3D(0.707107, -0.217264, 0.672902, 0, 0.951627, 0.307257, -0
 
 [node name="ProjectilePool" type="Node3D" parent="." node_paths=PackedStringArray("multi_mesh_instance")]
 script = ExtResource("1_8s0bm")
-num_total = 1000
+num_total = 10000
 multi_mesh_instance = NodePath("../MultiMeshInstance3D")
 metadata/_custom_type_script = "uid://cron0u8pyi72t"
 

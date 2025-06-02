@@ -13,6 +13,7 @@ var mmesh
 
 func _ready() -> void:
 	freq = projectile_lifetime / num_total
+	freq += 0.001
 	print("Spawn frequency: ", freq)
 	#multimesh.instance_count = num_total
 	mmesh = multi_mesh_instance.multimesh

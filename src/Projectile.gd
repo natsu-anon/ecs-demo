@@ -15,6 +15,6 @@ func _process(delta: float) -> void:
 		# print("recycle: ", get_index())
 		hide()
 		set_process(false)
-		pool.move_child(self, -1)
+		pool.move_child(self, pool.num_active)
 		pool.num_active -= 1
 		flag = false

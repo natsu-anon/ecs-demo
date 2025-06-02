@@ -38,6 +38,7 @@ func _process(delta: float) -> void:
 
 func spawn_projectile() -> void:
 	var entity: Entity3D = get_child(num_active)
+	num_active += 1
 	var id: int = ECS.activate_entity(entity)
 	ECS.add_component(id, ECS.POSITION)
 	ECS.set_position(id, position)
@@ -45,5 +46,3 @@ func spawn_projectile() -> void:
 	ECS.set_velocity(id, projectile_speed * Vector3.FORWARD)
 	ECS.add_component(id, ECS.LIFETIME)
 	ECS.set_lifetime(id, projectile_lifetime)
-
-	num_active += 1
