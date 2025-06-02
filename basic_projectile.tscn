@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://civpp808vopuq"]
+
+[ext_resource type="Script" uid="uid://cuk37pql0ed5h" path="res://src/Projectile.gd" id="1_et3tk"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_et3tk"]
+
+[node name="BasicProjectile" type="Node3D"]
+script = ExtResource("1_et3tk")
+metadata/_custom_type_script = "uid://cuk37pql0ed5h"
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_et3tk")

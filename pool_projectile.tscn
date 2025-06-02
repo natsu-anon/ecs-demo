@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://bg116bys2703d"]
+
+[ext_resource type="Script" uid="uid://dotn5suop567o" path="res://src/PoolProjectile.gd" id="1_78wvq"]
+
+[node name="NodeProjectile" type="Node3D"]
+physics_interpolation_mode = 2
+script = ExtResource("1_78wvq")
+metadata/_custom_type_script = "uid://dotn5suop567o"
