@@ -219,8 +219,7 @@ static int update_positions(void* args) {
 	return 0;
 }
 
-static int sync_positions(void* args)
-{
+static int sync_positions(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
 	const uint16_t n = span->n;
 	Position* res = (Position*)res_arena.allocation;
@@ -234,8 +233,7 @@ static int sync_positions(void* args)
 	return 0;
 }
 
-static int populate_lifetime_update_buffer(void* args)
-{
+static int populate_lifetime_update_buffer(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
 	const uint16_t n = span->n;
 	Lifetime* buf = (Lifetime*)arg_arena.allocation;
@@ -249,8 +247,7 @@ static int populate_lifetime_update_buffer(void* args)
 }
 
 #define FREE_ENTITY NUM_COMPONENTS
-static int update_lifetimes(void* args)
-{
+static int update_lifetimes(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
 	const uint16_t n = span->n;
 	const double delta = span->delta;
@@ -261,8 +258,7 @@ static int update_lifetimes(void* args)
 	return 0;
 }
 
-static int sync_lifetimes(void* args)
-{
+static int sync_lifetimes(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
 	const uint16_t n = span->n;
 	Lifetime* buf = (Lifetime*)arg_arena.allocation;
