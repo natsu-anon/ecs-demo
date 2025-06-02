@@ -42,7 +42,7 @@ using namespace godot;
 #define X(_, __, A,  ___) static pool_t A##_pool = {0};
 COMPONENTS
 #undef X
-pool_t* component_pool[Component::NUM_COMPONENTS];
+pool_t* component_pool[NUM_COMPONENTS];
 
 ECS::ECS() {
 	if (Engine::get_singleton()->is_editor_hint()) return;
