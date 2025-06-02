@@ -15,9 +15,6 @@ process_thread_group_order = 0
 process_thread_messages = 0
 
 [node name="EntityProjectilePool" type="EntityPool" parent="." node_paths=PackedStringArray("multi_mesh_instance")]
-process_thread_group = 1
-process_thread_group_order = 0
-process_thread_messages = 0
 script = ExtResource("1_swnti")
 projectile_lifetime = 3.0
 num_total = 10000
@@ -30,7 +27,7 @@ transform = Transform3D(0.836698, -0.137791, 0.530048, 1.09313e-08, 0.967832, 0.
 [node name="Label" type="Label" parent="Camera3D"]
 offset_right = 40.0
 offset_bottom = 23.0
-text = "ECS"
+text = "ECS + MM"
 label_settings = SubResource("LabelSettings_p1ocq")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]

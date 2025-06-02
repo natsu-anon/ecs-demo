@@ -1,12 +1,12 @@
 [gd_scene load_steps=4 format=3 uid="uid://d3mcok1uctrgo"]
 
-[ext_resource type="Script" uid="uid://cron0u8pyi72t" path="res://src/ProjectilePool.gd" id="1_8s0bm"]
-[ext_resource type="MultiMesh" uid="uid://cx5f2vl8heyib" path="res://sphere_multimesh.tres" id="2_wlsuk"]
+[ext_resource type="Script" uid="uid://cron0u8pyi72t" path="res://src/ProjectilePool.gd" id="1_74thy"]
+[ext_resource type="MultiMesh" uid="uid://cx5f2vl8heyib" path="res://sphere_multimesh.tres" id="2_0rv2i"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_wlsuk"]
 font_size = 160
 
-[node name="ClassicDemo" type="Node3D"]
+[node name="PoolDemo" type="Node3D"]
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(0.836698, -0.137791, 0.530048, 1.09313e-08, 0.967832, 0.251596, -0.547665, -0.21051, 0.809783, 2.27601, 1.49254, 1.11068)
@@ -14,17 +14,18 @@ transform = Transform3D(0.836698, -0.137791, 0.530048, 1.09313e-08, 0.967832, 0.
 [node name="Label" type="Label" parent="Camera3D"]
 offset_right = 40.0
 offset_bottom = 23.0
-text = "Classico"
+text = "Pool + MM"
 label_settings = SubResource("LabelSettings_wlsuk")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.707107, -0.217264, 0.672902, 0, 0.951627, 0.307257, -0.707107, -0.217264, 0.672902, 0, 0, 0)
 
 [node name="ProjectilePool" type="Node3D" parent="." node_paths=PackedStringArray("multi_mesh_instance")]
-script = ExtResource("1_8s0bm")
-num_total = 10000
+script = ExtResource("1_74thy")
 multi_mesh_instance = NodePath("../MultiMeshInstance3D")
+projectile_lifetime = 3.0
+num_total = 10000
 metadata/_custom_type_script = "uid://cron0u8pyi72t"
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
-multimesh = ExtResource("2_wlsuk")
+multimesh = ExtResource("2_0rv2i")

@@ -21,7 +21,6 @@ enum Component {
 };
 
 }
-
 VARIANT_ENUM_CAST(Component);
 
 

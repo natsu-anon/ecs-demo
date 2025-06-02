@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bg116bys2703d"]
-
-[ext_resource type="Script" uid="uid://dotn5suop567o" path="res://src/Projectile.gd" id="1_kciq2"]
-
-[node name="DemoProjectile" type="Node3D"]
-physics_interpolation_mode = 2
-script = ExtResource("1_kciq2")
-metadata/_custom_type_script = "uid://dotn5suop567o"
