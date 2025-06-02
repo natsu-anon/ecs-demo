@@ -37,72 +37,59 @@ ECS::ECS() {
 	// const size_t size = sizeof *ecs_table.entities + sizeof *ecs_table.bitmasks;
 	const size_t size = sizeof *ecs_table.entities + NUM_COMPONENTS * sizeof *ecs_table.components + sizeof *ecs_table.bitmasks;
 	ecs_table.entities = malloc(ENTITY_CAP * size);
-	assert(entity_table.entity && "Failed to allocate memory for entity_table.");
-	// ecs_table.bitmasks = (uint64_t*)(ecs_table.entities + ENTITY_CAP);
-	ecs_table.components = (void**)(ecs_table.entities + NUM_COMPONENTS * ENTITY_CAP);
-	ecs_table.bitmasks = (uint64_t*)(ecs_table.components + ENTITY_CAP);
+	assert(entity_table.entity && "Failed to allocate memory for the ecs_table");
+	ecs_table.components = (void**)(ecs_table.entities + ENTITY_CAP);
+	ecs_table.bitmasks = (uint8_t*)(ecs_table.components + NUM_COMPONENTS * ENTITY_CAP);
+	ecs_table.size = 0;
 	// initialize all the pools
 #define X(ENUM, TYPE, NAME, __)							\
 	pool_init(&NAME##_pool, sizeof(TYPE), ENTITY_CAP);	\
 	component_pool[ENUM] = &NAME##_pool;
 	COMPONENTS
 #undef X
-	// see Entity.hpp
-	pool_init(&address_pool, NUM_COMPONENTS * sizeof(void*), ENTITY_CAP);
-	// initialize the update list
 }
 
 ECS::~ECS() {
-	/* WHY FREE? */
 	std::free(res_arena.allocation);
 	std::free(arg_arena.allocation);
 	std::free(ecs_table.entities);
-	// std::free(update_list.indices);
 }
 
 
 uint16_t ECS::activate_entity(Entity3D* entity) {
 	// if (entity == NULL) { return ENTITY_CAP; }
+	if (ecs_table.size == ENTITY_CAP)
+	{
+		fprintf(stderr, "ENTITY OVERFLOW!");
+		assert(0);
+	}
 	const uint16_t i = ecs_table.size++;
 	ecs_table.entities[i] = entity;
-	ecs_table.bitmasks[i] = 0; // zero before distributing
+	ecs_table.bitmasks[i] = 0;
 	// I could memset the actual components, but I don't have to(see add_component)
-	// memset(ecs_table.components + i, 0x00, NUM_COMPONENTS * sizeof *ecs_table.components);
 	entity->ecs_id = i;
-	// entity->components = pool_calloc(&address_pool);
 	entity->show();
 	return i;
 }
 
 void ECS::add_component(const uint16_t id, const Component component)
 {
-	// size_t* components = (size_t*)ecs_table.components + ecs_id;
-	// components[component] = pool_calloc(component_pool[component]);
-	// ecs_table.entities[ecs_id]->components[component] = pool_calloc(component_pool[component]);
 	ecs_table.components[NUM_COMPONENTS * id + component] = pool_calloc(component_pool[component]);
 	ecs_table.bitmasks[id] |= 1 << component;
 }
 
 void ECS::set_position(const uint16_t id, const Vector3 &value) {
 	Position temp = { .x = value.x, .y = value.y, .z = value.z };
-	// Position* dest =  ecs_table.entities[id]->components[POSITION];
-	// memcpy(dest, &temp, sizeof(Position));
 	memcpy(ecs_table.components[NUM_COMPONENTS * id + POSITION], &temp, sizeof(Velocity));
 }
 
 void ECS::set_velocity(const uint16_t id, const Vector3 &value) {
 	Velocity temp = { .x = value.x, .y = value.y, .z = value.z };
-	// Velocity* dest =  ecs_table.entities[id]->components[VELOCITY];
-	// memcpy(dest, &temp, sizeof(Velocity));
-	// Velocity* v = (Velocity*)(components + VELOCITY);
-	// print_line("v", id, " = (", v->x , ", ", v->y, ", ", v->z, ")");
 	memcpy(ecs_table.components[NUM_COMPONENTS * id + VELOCITY], &temp, sizeof(Velocity));
 }
 
 void ECS::set_lifetime(const uint16_t id, const float &value) {
-	// Lifetime* dest =  ecs_table.entities[id]->components[LIFETIME];
 	memcpy(ecs_table.components[NUM_COMPONENTS * id + LIFETIME], &value, sizeof(Lifetime));
-	// dest->value = value;
 }
 
 

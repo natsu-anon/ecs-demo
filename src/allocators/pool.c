@@ -29,8 +29,8 @@ void pool_free(pool_t* pool, void* ptr)
 	const uint8_t k = pool->allocation <= p & p < pool->allocation + pool->alloc_size;
 	const pool_node_t* head = pool->allocation + pool->head;
 	pool_node_t* node = (pool_node_t*)(k * (size_t)ptr + (1 - k) * (size_t)head);
-	/* node->next = k * pool->head + (1 - k) * head->next; */
-	node->next = head->next; // this is fine actually
+	node->next = k * pool->head + (1 - k) * head->next;
+	/* node->next = head->next; // this is NOT fine actually */
 	pool->head = (uint8_t*)node - pool->allocation;
 }
 
