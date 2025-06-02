@@ -255,27 +255,32 @@ static int update_lifetimes(void* args)
 	const uint16_t n = span->n;
 	const double delta = span->delta;
 	Lifetime* buf = (Lifetime*)arg_arena.allocation;
-	{
-		void** components = ecs_table.components;
-		for (uint16_t i = span->i; i < n; ++i) {
-			buf[update_list.indices[i]].value -= delta;
-		}
+	for (uint16_t i = span->i; i < n; ++i) {
+		buf[update_list.indices[i]].value -= delta;
 	}
-	{
-		// D E V I L I S H T A C T I C
-		uint8_t* bitmasks = ecs_table.bitmasks;
-		for (uint16_t i = span->i; i < n; ++i) {
-			bitmasks[update_list.indices[i]] |= (buf[i].bits >> 31) << FREE_ENTITY;
-		}
+	return 0;
+}
+
+static int sync_lifetimes(void* args)
+{
+	const DeltaSpan* span = (DeltaSpan*)args;
+	const uint16_t n = span->n;
+	Lifetime* buf = (Lifetime*)arg_arena.allocation;
+	void** components = ecs_table.components;
+	uint8_t* bitmasks = ecs_table.bitmasks;
+	for (uint16_t i = span->i; i < n; ++i) {
+		const uint16_t j = update_list.indices[i];
+		const uint16_t k = NUM_COMPONENTS * j;
+		memcpy(components[k + LIFETIME], buf + i, sizeof(Lifetime));
+		bitmasks[j] |= (buf[i].bits >> 31) << FREE_ENTITY;
 	}
 	return 0;
 }
 
 void ECS::_process(const double delta) {
-	// these aliases are actually safe
-	Entity3D** entities = ecs_table.entities;
-	void** components = ecs_table.components;
+	// these aliases are actually free safe
 	uint8_t* bitmasks = ecs_table.bitmasks;
+	Entity3D** entities = ecs_table.entities;
 	thrd_t* threads = alloca(max_threads * sizeof *threads);
 	int t_res;
 	// FIRST: free before anything else
@@ -287,6 +292,7 @@ void ECS::_process(const double delta) {
 		}
 	}
 	if (update_list.size > 0) {
+		void** components = ecs_table.components;
 		const uint16_t n = update_list.size;
 		if (max_threads >= NUM_COMPONENTS) {
 			Component* c = alloca(NUM_COMPONENTS * sizeof *c);
@@ -302,28 +308,24 @@ void ECS::_process(const double delta) {
 			// HOMEWORK ASSIGNMENT!
 		}
 		// NOTE: skip zeroing the to-be-freed bitmasks since ecs_table.size will be shrunk
-		// hide the node
-		// Span* spans = alloca(max_threads * sizeof *spans);
-		// set_spans(spans, max_threads, n);
-		// for (uint8_t t = 0; t < max_threads; ++t) {
-		// 	thrd_create(threads + t, hide_nodes, spans + t);
-		// }
-		// for (uint8_t t = 0; t < max_threads; ++t) {
-		// 	thrd_join(threads[t], &t_res);
-		// }
+		// hide the nodes
 		// finally, move the entities to end of the entity pool
 		// AND, shrink the entity pool
 		// AND, shrink the entity table by repeatedly copying the last element to the closest freed spot.
 		// So can't brainlessly multithread :(
+		// EntityPool* entity_pool = (EntityPool*)entities[0]->get_parent();
+		// for (int32_t i = n - 1; i >= 0; --i) {
+		// 	Entity3D* e = entities[update_list.indices[i]];
+		// 	e->hide();
+		// 	entity_pool->move_child(e, entity_pool->num_active--);
+		// }
+		// const size_t sizeof_components = NUM_COMPONENTS * sizeof *components; // hoist
 		EntityPool* entity_pool = (EntityPool*)entities[0]->get_parent();
-		for (int32_t i = n - 1; i >= 0; --i) {
-			Entity3D* e = entities[update_list.indices[i]];
-			e->hide();
-			entity_pool->move_child(e, entity_pool->num_active--);
-		}
 		const size_t sizeof_components = NUM_COMPONENTS * sizeof *components; // hoist
 		for (int32_t i = n - 1; i >= 0; --i) {
 			const uint16_t j = update_list.indices[i];
+			entities[j]->hide();
+			entity_pool->move_child(entities[j], entity_pool->num_active--);
 			const uint16_t m = --ecs_table.size;
 			if (j < m) {
 				entities[j] = entities[m];
@@ -384,6 +386,9 @@ void ECS::_process(const double delta) {
 		arena_scratch(&arg_arena, n * sizeof(Lifetime));
 		DeltaSpan* spans = alloca(max_threads * sizeof *spans);
 		set_delta_spans(spans, max_threads, n, delta);
+		// for (uint8_t t = 0; t < max_threads; ++t) {
+		// 	printf("spans%d: [%d, %d)\n", t, spans[t].i, spans[t].n);
+		// }
 		for (uint8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, populate_lifetime_update_buffer, spans + t);
 		}
@@ -392,6 +397,12 @@ void ECS::_process(const double delta) {
 		}
 		for (uint8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, update_lifetimes, spans + t);
+		}
+		for (uint8_t t = 0; t < max_threads; ++t) {
+			thrd_join(threads[t], &t_res);
+		}
+		for (uint8_t t = 0; t < max_threads; ++t) {
+			thrd_create(threads + t, sync_lifetimes, spans + t);
 		}
 		for (uint8_t t = 0; t < max_threads; ++t) {
 			thrd_join(threads[t], &t_res);
