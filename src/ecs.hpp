@@ -7,8 +7,8 @@
 #include "allocators/arena.h"
 #include "components.hpp"
 
-#define ENTITY_CAP 16384
-// #define ENTITY_CAP 65536
+// #define ENTITY_CAP 16384
+#define ENTITY_CAP 65536
 
 namespace godot {
 class Entity3D;
