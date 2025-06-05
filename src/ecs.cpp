@@ -4,7 +4,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
+#ifdef _WIN32 // wtf microsoft
+#include <string.h>
+#else
 #include <strings.h>
+#endif
 #include <threads.h>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -50,6 +54,7 @@ ECS::ECS() {
 	// const size_t size = sizeof *ecs_table.entities + sizeof *ecs_table.bitmasks;
 	const size_t size = sizeof *ecs_table.entities + NUM_COMPONENTS * sizeof *ecs_table.components + sizeof *ecs_table.bitmasks;
 	ecs_table.entities = malloc(ENTITY_CAP * size);
+	ecs_table.entities = (Entity3D**)malloc(ENTITY_CAP * size);
 	assert(entity_table.entity && "Failed to allocate memory for the ecs_table");
 	ecs_table.components = (void**)(ecs_table.entities + ENTITY_CAP);
 	ecs_table.bitmasks = (uint8_t*)(ecs_table.components + NUM_COMPONENTS * ENTITY_CAP);
@@ -71,12 +76,14 @@ ECS::~ECS() {
 #undef X
 }
 
+
 uint16_t ECS::activate_entity(Entity3D* entity) {
 	// if (entity == NULL) { return ENTITY_CAP; }
-	if (ecs_table.size == ENTITY_CAP)
+	if (ecs_table.size == ENTITY_CAP - 1)
 	{
 		fprintf(stderr, "ENTITY OVERFLOW!");
-		assert(0);}
+		assert(0);
+	}
 	const uint16_t i = ecs_table.size++;
 	ecs_table.entities[i] = entity;
 	ecs_table.bitmasks[i] = 0;
