@@ -27,10 +27,11 @@ static arena_t arg_arena = {0};
 
 using namespace godot;
 
-#define X(_, __, A,  ___) static pool_t A##_pool = {0};
+#define X(_, __, A,  ___) \
+	static pool_t A##_pool = {0};
 COMPONENTS
 #undef X
-pool_t* component_pool[Component::NUM_COMPONENTS];
+pool_t* component_pool[NUM_COMPONENTS];
 
 ECS::ECS() {
 	if (Engine::get_singleton()->is_editor_hint()) return;
@@ -125,7 +126,6 @@ void ECS::_process(const double delta) {
 	}
 	if (update_list.size > 0) {
 		const uint16_t n = update_list.size;
-		// printf("\n> freeing %d out of %d entities\n", n, ecs_table.size);
 		// recycle the components
 		for (uint8_t i = 0; i < NUM_COMPONENTS; ++i) {
 			for (uint16_t j = 0; j < n; ++j) {
