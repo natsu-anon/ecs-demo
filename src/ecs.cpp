@@ -1,6 +1,5 @@
 #include "ecs.hpp"
 #include "entity3d.hpp"
-#include <cstdint>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
