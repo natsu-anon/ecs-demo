@@ -7,3 +7,10 @@
 .cache/
 *.os
 *.so
+
+# Windows >:^(
+*.dll
+*.obj
+*.exp
+*.lib
+
