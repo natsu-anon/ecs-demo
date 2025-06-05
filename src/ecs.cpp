@@ -1,10 +1,15 @@
 #include "ecs.hpp"
 #include "entity3d.hpp"
+#include <cstdint>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
+#ifdef _WIN32 // wtf microsoft
+#include <string.h>
+#else
 #include <strings.h>
+#endif
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include "components.hpp"
@@ -34,7 +39,7 @@ ECS::ECS() {
 	// initialize the entity table
 	// const size_t size = sizeof *ecs_table.entities + sizeof *ecs_table.bitmasks;
 	const size_t size = sizeof *ecs_table.entities + NUM_COMPONENTS * sizeof *ecs_table.components + sizeof *ecs_table.bitmasks;
-	ecs_table.entities = malloc(ENTITY_CAP * size);
+	ecs_table.entities = (Entity3D**)malloc(ENTITY_CAP * size);
 	assert(entity_table.entity && "Failed to allocate memory for the ecs_table");
 	ecs_table.components = (void**)(ecs_table.entities + ENTITY_CAP);
 	ecs_table.bitmasks = (uint8_t*)(ecs_table.components + NUM_COMPONENTS * ENTITY_CAP);
@@ -56,7 +61,7 @@ ECS::~ECS() {
 
 uint16_t ECS::activate_entity(Entity3D* entity) {
 	// if (entity == NULL) { return ENTITY_CAP; }
-	if (ecs_table.size == ENTITY_CAP)
+	if (ecs_table.size == ENTITY_CAP - 1)
 	{
 		fprintf(stderr, "ENTITY OVERFLOW!");
 		assert(0);
@@ -168,8 +173,9 @@ void ECS::_process(const double delta) {
 			Position position;
 			Velocity velocity;
 		};
-		Argument* args = arena_scratch(&arg_arena, n * sizeof *args);
-		Position* res = arena_scratch(&res_arena, n * sizeof *res);
+		// fuck you too, c++
+		Argument* args = (Argument*)arena_scratch(&arg_arena, n * sizeof *args);
+		Position* res = (Position*)arena_scratch(&res_arena, n * sizeof *res);
 		for (uint16_t i = 0; i < n; ++i) {
 			const uint16_t j = update_list.indices[i];
 			const uint32_t k = NUM_COMPONENTS * j;
@@ -204,7 +210,8 @@ void ECS::_process(const double delta) {
 	if (update_list.size > 0)
 	{
 		const uint16_t n = update_list.size;
-		Lifetime* args = arena_scratch(&arg_arena, n * sizeof *args);
+		// "just use generic."  A phrase used by small-souled bugmen.
+		Lifetime* args = (Lifetime*)arena_scratch(&arg_arena, n * sizeof *args);
 		for (uint16_t i = 0; i < n; ++i)
 		{
 			const uint16_t j = update_list.indices[i];
@@ -221,6 +228,5 @@ void ECS::_process(const double delta) {
 			memcpy(components[NUM_COMPONENTS * j + LIFETIME], args + i, sizeof(Lifetime));
 			bitmasks[j] |= (args[i].bits >> 31) << FREE_ENTITY;
 		}
-		fflush(stdout);
 	}
 }
