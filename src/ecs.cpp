@@ -61,7 +61,7 @@ ECS::~ECS() {
 
 uint16_t ECS::activate_entity(Entity3D* entity) {
 	// if (entity == NULL) { return ENTITY_CAP; }
-	if (ecs_table.size == ENTITY_CAP - 1)
+	if (ecs_table.size == ENTITY_CAP)
 	{
 		fprintf(stderr, "ENTITY OVERFLOW!");
 		assert(0);
