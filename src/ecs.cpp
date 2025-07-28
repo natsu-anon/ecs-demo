@@ -1,5 +1,6 @@
 #include "ecs.hpp"
 #include "entity3d.hpp"
+#include "godot_cpp/variant/utility_functions.hpp"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,25 +15,26 @@
 #include <godot_cpp/classes/os.hpp>
 #include "components.hpp"
 #include "entity_pool.hpp"
+#include "allocators/arena.h"
 #include "allocators/pool.h"
 
 
 static struct {
-	uint16_t indices[ENTITY_CAP];
-	uint16_t size;
+	int32_t indices[ENTITY_CAP];
+	int32_t size;
 } update_list = {0};
 
 struct Span
 {
-	uint16_t i;
-	uint16_t n;
+	int32_t i;
+	int32_t n;
 };
 
 struct DeltaSpan
 {
 	double delta;
-	uint16_t i;
-	uint16_t n;
+	int32_t i;
+	int32_t n;
 };
 
 
@@ -53,11 +55,10 @@ ECS::ECS() {
 	// initialize the entity table
 	// const size_t size = sizeof *ecs_table.entities + sizeof *ecs_table.bitmasks;
 	const size_t size = sizeof *ecs_table.entities + NUM_COMPONENTS * sizeof *ecs_table.components + sizeof *ecs_table.bitmasks;
-	ecs_table.entities = malloc(ENTITY_CAP * size);
 	ecs_table.entities = (Entity3D**)malloc(ENTITY_CAP * size);
 	assert(entity_table.entity && "Failed to allocate memory for the ecs_table");
 	ecs_table.components = (void**)(ecs_table.entities + ENTITY_CAP);
-	ecs_table.bitmasks = (uint8_t*)(ecs_table.components + NUM_COMPONENTS * ENTITY_CAP);
+	ecs_table.bitmasks = (int8_t*)(ecs_table.components + NUM_COMPONENTS * ENTITY_CAP);
 	ecs_table.size = 0;
 	// initialize all the pools
 #define X(ENUM, TYPE, NAME, __)							\
@@ -76,15 +77,14 @@ ECS::~ECS() {
 #undef X
 }
 
-
-uint16_t ECS::activate_entity(Entity3D* entity) {
+int32_t ECS::activate_entity(Entity3D* entity) {
 	// if (entity == NULL) { return ENTITY_CAP; }
 	if (ecs_table.size == ENTITY_CAP)
 	{
 		fprintf(stderr, "ENTITY OVERFLOW!");
 		assert(0);
 	}
-	const uint16_t i = ecs_table.size++;
+	const int32_t i = ecs_table.size++;
 	ecs_table.entities[i] = entity;
 	ecs_table.bitmasks[i] = 0;
 	// I could memset the actual components, but I don't have to(see add_component)
@@ -93,23 +93,23 @@ uint16_t ECS::activate_entity(Entity3D* entity) {
 	return i;
 }
 
-void ECS::add_component(const uint16_t id, const Component component)
+void ECS::add_component(const int32_t id, const Component component)
 {
 	ecs_table.components[NUM_COMPONENTS * id + component] = pool_calloc(component_pool[component]);
 	ecs_table.bitmasks[id] |= 1 << component;
 }
 
-void ECS::set_position(const uint16_t id, const Vector3 &value) {
+void ECS::set_position(const int32_t id, const Vector3 &value) {
 	Position temp = { .x = value.x, .y = value.y, .z = value.z };
 	memcpy(ecs_table.components[NUM_COMPONENTS * id + POSITION], &temp, sizeof(Velocity));
 }
 
-void ECS::set_velocity(const uint16_t id, const Vector3 &value) {
+void ECS::set_velocity(const int32_t id, const Vector3 &value) {
 	Velocity temp = { .x = value.x, .y = value.y, .z = value.z };
 	memcpy(ecs_table.components[NUM_COMPONENTS * id + VELOCITY], &temp, sizeof(Velocity));
 }
 
-void ECS::set_lifetime(const uint16_t id, const float &value) {
+void ECS::set_lifetime(const int32_t id, const float &value) {
 	memcpy(ecs_table.components[NUM_COMPONENTS * id + LIFETIME], &value, sizeof(Lifetime));
 }
 
@@ -124,17 +124,17 @@ void ECS::_bind_methods() {
 #undef X
 }
 
-inline static void mark_update(uint16_t index) {
+inline static void mark_update(int32_t index) {
 	update_list.indices[update_list.size++] = index;
 }
 
-static void set_spans(Span* spans, const uint16_t num_threads, const uint16_t n) {
-	const uint16_t div = n / num_threads;
-	const uint16_t mod = n % num_threads;
+static void set_spans(Span* spans, const int32_t num_threads, const int32_t n) {
+	const int32_t div = n / num_threads;
+	const int32_t mod = n % num_threads;
 	spans->i = 0;
 	spans->n = div + (mod > 0);
 	for (uint8_t i = 1; i < num_threads - 1; ++i) {
-		const uint16_t k = spans[i - 1].n;
+		const int32_t k = spans[i - 1].n;
 		spans[i].i = k;
 		spans[i].n = k + div + (mod > i);
 	}
@@ -145,14 +145,14 @@ static void set_spans(Span* spans, const uint16_t num_threads, const uint16_t n)
 	}
 }
 
-static void set_delta_spans(DeltaSpan* spans, const uint16_t num_threads, const uint16_t n, const double delta) {
+static void set_delta_spans(DeltaSpan* spans, const int32_t num_threads, const int32_t n, const double delta) {
 	const uint16_t div = n / num_threads;
 	const uint16_t mod = n % num_threads;
 	spans->delta = delta;
 	spans->i = 0;
 	spans->n = div + (mod > 0);
 	for (uint8_t i = 1; i < num_threads - 1; ++i) {
-		const uint16_t k = spans[i - 1].n;
+		const int32_t k = spans[i - 1].n;
 		spans[i].i = k;
 		spans[i].n = k + div + (mod > i);
 		spans[i].delta = delta;
@@ -168,10 +168,11 @@ static void set_delta_spans(DeltaSpan* spans, const uint16_t num_threads, const 
 static int free_components(void* args)
 {
 	const Component c = *(Component*)args;
+	// const int8_t pool_index = *(int8_t*)args;
 	void** components = ecs_table.components;
-	for (uint16_t j = 0; j < update_list.size; ++j)
+	for (int32_t j = 0; j < update_list.size; ++j)
 	{
-		const uint16_t k = update_list.indices[j];
+		const int32_t k = update_list.indices[j];
 		pool_free(component_pool[c], components[NUM_COMPONENTS * k + c]);
 	}
 	return 0;
@@ -180,9 +181,9 @@ static int free_components(void* args)
 static int hide_nodes(void* args)
 {
 	const Span* span = (Span*)args;
-	const uint16_t n = span->n;
+	const int32_t n = span->n;
 	Entity3D** entities = ecs_table.entities;
-	for (uint16_t i = span->i; i < n; ++i)
+	for (int32_t i = span->i; i < n; ++i)
 	{
 		entities[update_list.indices[i]]->hide();
 	}
@@ -196,11 +197,11 @@ struct PositionVelocity {
 
 static int populate_position_update_buffers(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
-	const uint16_t n = span->n;
+	const int32_t n = span->n;
 	PositionVelocity* dest = (PositionVelocity*)arg_arena.allocation;
 	void** components = ecs_table.components;
-	for (uint16_t i = span->i; i < n; ++i) {
-		const uint16_t j = update_list.indices[i];
+	for (int32_t i = span->i; i < n; ++i) {
+		const int32_t j = update_list.indices[i];
 		const uint32_t k = NUM_COMPONENTS * j;
 		memcpy(&dest[i].position, components[k + POSITION], sizeof(Position));
 		memcpy(&dest[i].velocity, components[k + VELOCITY], sizeof(Velocity));
@@ -211,10 +212,10 @@ static int populate_position_update_buffers(void* args) {
 static int update_positions(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
 	const double delta = span->delta;
-	const uint16_t n = span->n;
+	const int32_t n = span->n;
 	PositionVelocity* src = (PositionVelocity*)arg_arena.allocation;
 	Position* dest = (Position*)res_arena.allocation;
-	for (uint16_t i = span->i; i < n; ++i) {
+	for (int32_t i = span->i; i < n; ++i) {
 		const Position p0 = src[i].position;
 		const Velocity v0 = src[i].velocity;
 		Position* p1 = dest + i;
@@ -227,12 +228,12 @@ static int update_positions(void* args) {
 
 static int sync_positions(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
-	const uint16_t n = span->n;
+	const int32_t n = span->n;
 	Position* res = (Position*)res_arena.allocation;
 	void** components = ecs_table.components;
 	Entity3D** entities = ecs_table.entities;
-	for (uint16_t i = span->i; i < n; ++i) {
-		const uint16_t j = update_list.indices[i];
+	for (int32_t i = span->i; i < n; ++i) {
+		const int32_t j = update_list.indices[i];
 		const uint32_t k = NUM_COMPONENTS * j;
 		memcpy(components[k + POSITION], res + i, sizeof(Position));
 	}
@@ -241,12 +242,12 @@ static int sync_positions(void* args) {
 
 static int populate_lifetime_update_buffer(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
-	const uint16_t n = span->n;
+	const int32_t n = span->n;
 	Lifetime* buf = (Lifetime*)arg_arena.allocation;
 	void** components = ecs_table.components;
-	for (uint16_t i = span->i; i < n; ++i) {
-		const uint16_t j = update_list.indices[i];
-		const uint32_t k = NUM_COMPONENTS * j;
+	for (int32_t i = span->i; i < n; ++i) {
+		const int32_t j = update_list.indices[i];
+		const int32_t k = NUM_COMPONENTS * j;
 		memcpy(buf + i, components[k + LIFETIME], sizeof(Lifetime));
 	}
 	return 0;
@@ -255,10 +256,10 @@ static int populate_lifetime_update_buffer(void* args) {
 #define FREE_ENTITY NUM_COMPONENTS
 static int update_lifetimes(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
-	const uint16_t n = span->n;
+	const int32_t n = span->n;
 	const double delta = span->delta;
 	Lifetime* buf = (Lifetime*)arg_arena.allocation;
-	for (uint16_t i = span->i; i < n; ++i) {
+	for (int32_t i = span->i; i < n; ++i) {
 		buf[update_list.indices[i]].value -= delta;
 	}
 	return 0;
@@ -266,13 +267,13 @@ static int update_lifetimes(void* args) {
 
 static int sync_lifetimes(void* args) {
 	const DeltaSpan* span = (DeltaSpan*)args;
-	const uint16_t n = span->n;
+	const int32_t n = span->n;
 	Lifetime* buf = (Lifetime*)arg_arena.allocation;
 	void** components = ecs_table.components;
-	uint8_t* bitmasks = ecs_table.bitmasks;
-	for (uint16_t i = span->i; i < n; ++i) {
-		const uint16_t j = update_list.indices[i];
-		const uint16_t k = NUM_COMPONENTS * j;
+	int8_t* bitmasks = ecs_table.bitmasks;
+	for (int32_t i = span->i; i < n; ++i) {
+		const int32_t j = update_list.indices[i];
+		const int32_t k = NUM_COMPONENTS * j;
 		memcpy(components[k + LIFETIME], buf + i, sizeof(Lifetime));
 		bitmasks[j] |= (buf[i].bits >> 31) << FREE_ENTITY;
 	}
@@ -281,28 +282,28 @@ static int sync_lifetimes(void* args) {
 
 void ECS::_process(const double delta) {
 	// these aliases are actually free safe
-	uint8_t* bitmasks = ecs_table.bitmasks;
+	int8_t* bitmasks = ecs_table.bitmasks;
 	Entity3D** entities = ecs_table.entities;
-	thrd_t* threads = alloca(max_threads * sizeof *threads);
+	thrd_t* threads = (thrd_t*)alloca(max_threads * sizeof *threads);
 	int t_res;
 	// FIRST: free before anything else
 	uint8_t mask = 1 << FREE_ENTITY;
 	update_list.size = 0;
-	for (uint16_t i = 0; i < ecs_table.size; ++i) {
+	for (int32_t i = 0; i < ecs_table.size; ++i) {
 		if (bitmasks[i] & mask) {
 			mark_update(i);
 		}
 	}
 	if (update_list.size > 0) {
 		void** components = ecs_table.components;
-		const uint16_t n = update_list.size;
+		const int32_t n = update_list.size;
 		if (max_threads >= NUM_COMPONENTS) {
-			Component* c = alloca(NUM_COMPONENTS * sizeof *c);
-			for (uint8_t i = 0; i < NUM_COMPONENTS; ++i) {
-				c[i] = i;
+			Component* c = (Component*)alloca(NUM_COMPONENTS * sizeof *c);
+			for (int8_t i = 0; i < NUM_COMPONENTS; ++i) {
+				c[i] = (Component)i;
 				thrd_create(threads + i, free_components, c + i);
 			}
-			for (uint8_t i = 0; i < NUM_COMPONENTS; ++i) {
+			for (int8_t i = 0; i < NUM_COMPONENTS; ++i) {
 				thrd_join(threads[i], &t_res);
 			}
 		}
@@ -325,10 +326,10 @@ void ECS::_process(const double delta) {
 		EntityPool* entity_pool = (EntityPool*)entities[0]->get_parent();
 		const size_t sizeof_components = NUM_COMPONENTS * sizeof *components; // hoist
 		for (int32_t i = n - 1; i >= 0; --i) {
-			const uint16_t j = update_list.indices[i];
+			const int32_t j = update_list.indices[i];
 			entities[j]->hide();
 			entity_pool->move_child(entities[j], entity_pool->num_active--);
-			const uint16_t m = --ecs_table.size;
+			const int32_t m = --ecs_table.size;
 			if (j < m) {
 				entities[j] = entities[m];
 				bitmasks[j] = bitmasks[m];
@@ -340,37 +341,37 @@ void ECS::_process(const double delta) {
 	}
 	mask = (1 << POSITION) | (1 << VELOCITY);
 	update_list.size = 0;
-	for (uint16_t i = 0; i < ecs_table.size; ++i) {
+	for (int32_t i = 0; i < ecs_table.size; ++i) {
 		if ((bitmasks[i] & mask) == mask) {
 			mark_update(i);
 		}
 	}
 	if (update_list.size > 0) {
-		const uint16_t n = update_list.size;
-		DeltaSpan* spans = alloca(max_threads * sizeof *spans);
+		const int32_t n = update_list.size;
+		DeltaSpan* spans = (DeltaSpan*)alloca(max_threads * sizeof *spans);
 		set_delta_spans(spans, max_threads, n, delta);
-		PositionVelocity* arg = arena_scratch(&arg_arena, n * sizeof(PositionVelocity));
-		Position* res = arena_scratch(&res_arena, n * sizeof *res);
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		PositionVelocity* arg = (PositionVelocity*)arena_scratch(&arg_arena, n * sizeof(PositionVelocity));
+		Position* res = (Position*)arena_scratch(&res_arena, n * sizeof *res);
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, populate_position_update_buffers, spans + t);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_join(threads[t], &t_res);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, update_positions, spans + t);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_join(threads[t], &t_res);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, sync_positions, spans + t);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_join(threads[t], &t_res);
 		}
 		// NOTE: godot doesnt want to brain-off multithread this :(
-		for (uint16_t i = 0; i < n; ++i) {
+		for (int32_t i = 0; i < n; ++i) {
 			const Vector3 vec3 = Vector3(res[i].x, res[i].y, res[i].z);
 			entities[update_list.indices[i]]->set_global_position(vec3);
 		}
@@ -378,35 +379,35 @@ void ECS::_process(const double delta) {
 	// update lifetimes
 	mask = 1 << LIFETIME;
 	update_list.size = 0;
-	for (uint16_t i = 0; i < ecs_table.size; ++i) {
+	for (int32_t i = 0; i < ecs_table.size; ++i) {
 		if (ecs_table.bitmasks[i] & mask) {
 			mark_update(i);
 		}
 	}
 	if (update_list.size > 0) {
-		const uint16_t n = update_list.size;
+		const int32_t n = update_list.size;
 		arena_scratch(&arg_arena, n * sizeof(Lifetime));
-		DeltaSpan* spans = alloca(max_threads * sizeof *spans);
+		DeltaSpan* spans = (DeltaSpan*)alloca(max_threads * sizeof *spans);
 		set_delta_spans(spans, max_threads, n, delta);
-		// for (uint8_t t = 0; t < max_threads; ++t) {
+		// for (int8_t t = 0; t < max_threads; ++t) {
 		// 	printf("spans%d: [%d, %d)\n", t, spans[t].i, spans[t].n);
 		// }
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, populate_lifetime_update_buffer, spans + t);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_join(threads[t], &t_res);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, update_lifetimes, spans + t);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_join(threads[t], &t_res);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_create(threads + t, sync_lifetimes, spans + t);
 		}
-		for (uint8_t t = 0; t < max_threads; ++t) {
+		for (int8_t t = 0; t < max_threads; ++t) {
 			thrd_join(threads[t], &t_res);
 		}
 	}
