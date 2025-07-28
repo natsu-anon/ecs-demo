@@ -11,7 +11,10 @@ env = SConscript("godot-cpp/SConstruct")
 # - CPPFLAGS are for pre-processor flags
 # - CPPDEFINES are for pre-processor defines
 # - LINKFLAGS are for linking flags
-env.Append(CCFLAGS=["-fpermissive"])
+if env["platform"] == "windows":
+    env.Append(CCFLAGS=["-permissive"])
+else:
+    env.Append(CCFLAGS=["-fpermissive"])
 
 # tweak this if you want to use different folders, or more folders, to store your source code in.
 env.Append(CPPPATH=["src/"])
