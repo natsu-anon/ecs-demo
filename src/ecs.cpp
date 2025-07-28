@@ -79,18 +79,20 @@ ECS::~ECS() {
 
 int32_t ECS::activate_entity(Entity3D* entity) {
 	// if (entity == NULL) { return ENTITY_CAP; }
-	if (ecs_table.size == ENTITY_CAP)
-	{
+	if (ecs_table.size < ENTITY_CAP) {
+		const int32_t i = ecs_table.size++;
+		ecs_table.entities[i] = entity;
+		ecs_table.bitmasks[i] = 0;
+		// I could memset the actual components, but I don't have to(see add_component)
+		entity->ecs_id = i;
+		entity->show();
+		return i;
+	}
+	else {
 		fprintf(stderr, "ENTITY OVERFLOW!");
 		assert(0);
+		return -1;
 	}
-	const int32_t i = ecs_table.size++;
-	ecs_table.entities[i] = entity;
-	ecs_table.bitmasks[i] = 0;
-	// I could memset the actual components, but I don't have to(see add_component)
-	entity->ecs_id = i;
-	entity->show();
-	return i;
 }
 
 void ECS::add_component(const int32_t id, const Component component)
@@ -146,8 +148,8 @@ static void set_spans(Span* spans, const int32_t num_threads, const int32_t n) {
 }
 
 static void set_delta_spans(DeltaSpan* spans, const int32_t num_threads, const int32_t n, const double delta) {
-	const uint16_t div = n / num_threads;
-	const uint16_t mod = n % num_threads;
+	const int32_t div = n / num_threads;
+	const int32_t mod = n % num_threads;
 	spans->delta = delta;
 	spans->i = 0;
 	spans->n = div + (mod > 0);
