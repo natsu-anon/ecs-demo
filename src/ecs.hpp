@@ -4,7 +4,6 @@
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/multi_mesh.hpp>
-#include "allocators/arena.h"
 #include "components.hpp"
 
 // #define ENTITY_CAP 16384
@@ -28,8 +27,8 @@ struct {
 	godot::Entity3D** entities; // lol lmao even
 	void** components;
 	// uint64_t* bitmasks;
-	uint8_t* bitmasks;
-	uint16_t size;
+	int8_t* bitmasks;
+	int32_t size;
 } ecs_table = {0};
 
 // struct Slice;
@@ -54,10 +53,10 @@ private:
 	int max_threads;
 
 public:
-	static uint16_t activate_entity(Entity3D* entity);
-	static void add_component(const uint16_t id, const Component component);
+	static int32_t activate_entity(Entity3D* entity);
+	static void add_component(const int32_t id, const Component component);
 
-#define X(_, __, NAME, GODOT_TYPE) static void set_##NAME(const uint16_t id, const GODOT_TYPE value);
+#define X(_, __, NAME, GODOT_TYPE) static void set_##NAME(const int32_t id, const GODOT_TYPE value);
 	COMPONENTS
 #undef X
 
