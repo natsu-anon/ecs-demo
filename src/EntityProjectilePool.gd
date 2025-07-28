@@ -3,7 +3,7 @@ extends EntityPool
 
 @export var projectile_speed: float = 10
 @export var projectile_lifetime: float = 10.0
-@export_range(0, 16384) var num_total: int = 100
+@export_range(0, 65535) var num_total: int = 100
 @export var multi_mesh_instance: MultiMeshInstance3D
 var projectile = preload("res://entity_projectile.tscn")
 var sum: float = 0
